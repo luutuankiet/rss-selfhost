@@ -57,7 +57,11 @@ services:
             - IP6_PROVIDER=none
 
     fullfeedrss:
-        image: 'heussd/fivefilters-full-text-rss:latest'
+        # image: 'heussd/fivefilters-full-text-rss:latest'
+        image: 'fulltextrss:latest'
+        build:
+            context: ./docker/full-text-rss
+            dockerfile: dockerfile
         container_name: fulltextrss
         environment:
             # Leave empty to disable admin section
@@ -65,7 +69,6 @@ services:
             - TZ=Asia/Ho_Chi_Minh
         volumes:
             - './persistent/fulltextrss/:/var/www/html/cache/rss'
-            # - 'rss-cache:/var/www/html/cache/rss'
             - './persistent/fulltextrss/custom_config.php:/var/www/html/custom_config.php'
         restart: unless-stopped
         # ports:

@@ -1,7 +1,6 @@
 .env
-/persistent
+/persistent/**
 !/persistent/.gitkeep
-/traefik
+/traefik/**
 !/traefik/.gitkeep
 *.code-workspace
-acme.json

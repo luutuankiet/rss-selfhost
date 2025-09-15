@@ -1,0 +1,109 @@
+version: '3.8'
+services:
+    traefik:
+        image: "traefik:v2.9"
+        container_name: "traefik"
+        command:
+            # --- Basic Settings ---
+            - "--api.dashboard=true"
+            - "--providers.docker=true"
+            - "--providers.docker.exposedbydefault=false"
+            
+            # --- EntryPoints ---
+            - "--entrypoints.web.address=:80"
+            - "--entrypoints.websecure.address=:443"
+            
+            # --- HTTP to HTTPS Redirection ---
+            - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+            - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+            
+            # --- Let's Encrypt Certificate Resolver ---
+            - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
+            - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - "./traefik/acme.json:/letsencrypt/acme.json"
+            - "/var/run/docker.sock:/var/run/docker.sock:ro"
+        networks:
+            - rss
+        env_file: ./.env
+        restart: unless-stopped
+
+    cloudflare-ddns:
+        image: favonia/cloudflare-ddns:latest
+        restart: unless-stopped
+        container_name: ddns
+        user: "1000:1000"
+        # Run the updater with specific user and group IDs (in that order).
+        # You can change the two numbers based on your need.
+        read_only: true
+        # Make the container filesystem read-only (optional but recommended)
+        cap_drop: [all]
+        # Drop all Linux capabilities (optional but recommended)
+        security_opt: [no-new-privileges:true]
+        # Another protection to restrict superuser privileges (optional but recommended)
+        env_file: ./.env
+        environment:
+            - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
+            # Your Cloudflare API token
+            - DOMAINS=rss.kenluu.org,freshrss.kenluu.org
+            # Your domains (separated by commas)
+            - PROXIED=true
+            # Tell Cloudflare to cache webpages and hide your IP (optional)
+            - IP6_PROVIDER=none
+
+    fullfeedrss:
+        image: 'heussd/fivefilters-full-text-rss:latest'
+        container_name: fulltextrss
+        environment:
+            # Leave empty to disable admin section
+            - FTR_ADMIN_PASSWORD=admin
+            - TZ=Asia/Ho_Chi_Minh
+        volumes:
+            - './persistent/fulltextrss/:/var/www/html/cache/rss'
+            # - 'rss-cache:/var/www/html/cache/rss'
+            - './persistent/fulltextrss/custom_config.php:/var/www/html/custom_config.php'
+        restart: unless-stopped
+        # ports:
+        #     - '8001:80'
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.fullfeedrss.rule=Host(`rss.kenluu.org`)"
+            - "traefik.http.routers.fullfeedrss.entrypoints=websecure"
+            - "traefik.http.routers.fullfeedrss.tls.certresolver=letsencrypt"
+            - "traefik.http.services.fullfeedrss.loadbalancer.server.port=80"
+            - "traefik.http.middlewares.fullfeedrss-auth.basicauth.users=${FULLFEEDRSS_AUTH}"
+            - "traefik.http.routers.fullfeedrss.middlewares=fullfeedrss-auth@docker"
+            
+        networks:
+            - rss
+            
+            
+    freshrss:
+        container_name: freshrss
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Asia/Ho_Chi_Minh
+        # ports:
+        #     - 8002:80
+        volumes:
+            - ./persistent/freshrss:/config
+        restart: unless-stopped
+        image: lscr.io/linuxserver/freshrss:latest
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.freshrss.rule=Host(`freshrss.kenluu.org`)"
+            - "traefik.http.routers.freshrss.entrypoints=websecure"
+            - "traefik.http.routers.freshrss.tls.certresolver=letsencrypt"
+            - "traefik.http.services.freshrss.loadbalancer.server.port=80"
+        networks:
+            - rss
+# creating specific network to isolate stack from default docker network.
+networks:
+    rss:
+        driver: bridge

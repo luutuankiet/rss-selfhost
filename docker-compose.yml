@@ -50,7 +50,7 @@ services:
         environment:
             - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
             # Your Cloudflare API token
-            - DOMAINS=rss.kenluu.org,freshrss.kenluu.org
+            - DOMAINS=rss.kenluu.org,freshrss.kenluu.org,linkding.kenluu.org
             # Your domains (separated by commas)
             - PROXIED=true
             # Tell Cloudflare to cache webpages and hide your IP (optional)
@@ -106,6 +106,32 @@ services:
             - "traefik.http.services.freshrss.loadbalancer.server.port=80"
         networks:
             - rss
+    linkding:
+        image: 'sissbruecker/linkding:latest'
+        container_name: linkding
+        volumes:
+            - './persistent/linkding-config:/etc/linkding/data'
+        restart: unless-stopped
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.linkding.rule=Host(`linkding.kenluu.org`)"
+            - "traefik.http.routers.linkding.entrypoints=websecure"
+            - "traefik.http.routers.linkding.tls.certresolver=letsencrypt"
+            - "traefik.http.services.linkding.loadbalancer.server.port=9090"
+        networks:
+            - rss
+    watchtower:  
+        image: containrrr/watchtower  
+        container_name: watchtower  
+        volumes:  
+            - /var/run/docker.sock:/var/run/docker.sock  
+        environment:  
+            - WATCHTOWER_CLEANUP=true  
+            - WATCHTOWER_SCHEDULE=0 0 3 * * * 
+            - TZ=Asia/Ho_Chi_Minh 
+        networks:  
+            - rss
+        restart: unless-stopped
 # creating specific network to isolate stack from default docker network.
 networks:
     rss:

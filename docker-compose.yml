@@ -62,7 +62,7 @@ services:
         build:
             context: ./docker/full-text-rss
             dockerfile: dockerfile
-        container_name: fulltextrss
+        container_name: rss
         environment:
             # Leave empty to disable admin section
             - FTR_ADMIN_PASSWORD=admin

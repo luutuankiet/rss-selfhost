@@ -92,6 +92,7 @@ services:
             - PUID=1000
             - PGID=1000
             - TZ=Asia/Ho_Chi_Minh
+            - CRON_MIN=*/1
         # ports:
         #     - 8002:80
         volumes:

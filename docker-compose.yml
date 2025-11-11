@@ -37,7 +37,7 @@ services:
             - FTR_ADMIN_PASSWORD=admin
             - TZ=Asia/Ho_Chi_Minh
         volumes:
-            - './persistent/fulltextrss/:/var/www/html/cache/rss'
+            # - './persistent/fulltextrss/:/var/www/html/cache/rss'
             - './persistent/fulltextrss/custom_config.php:/var/www/html/custom_config.php'
         restart: unless-stopped
         # ports:

@@ -140,7 +140,7 @@ $options->multipage = true;
 // Initially it's best to keep this disabled to make sure everything works
 // as expected. If you have APC enabled, please also see smart_cache in the
 // advanced section.
-$options->caching = true;
+$options->caching = false;
 
 // Cache time (minutes)
 // ----------------------
@@ -149,7 +149,7 @@ $options->caching = true;
 // sent in the Full-Text RSS HTTP response.
 // So even if you disable disk caching, this value will still
 // affect the cache headers in the HTTP response.
-$options->cache_time = 120;
+$options->cache_time = 0;
 
 // Cache directory
 // ----------------------
@@ -412,7 +412,7 @@ $options->apc = true;
 // This improves performance by reducing disk access.
 // Note: this has no effect if APC is disabled or unavailable on your server,
 // or if you have caching disabled.
-$options->smart_cache = true;
+$options->smart_cache = false;
 
 // Fingerprints
 // ----------------------

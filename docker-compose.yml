@@ -17,7 +17,7 @@ services:
         environment:
             - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
             # Your Cloudflare API token
-            - DOMAINS=rss.kenluu.org,freshrss.kenluu.org,linkding.kenluu.org
+            - DOMAINS=rss.kenluu.org,freshrss.kenluu.org,linkding.kenluu.org,freshrss-linkding.kenluu.org, freshrss-mcp.kenluu.org, crawl.kenluu.org
             # Your domains (separated by commas)
             - PROXIED=true
             # Tell Cloudflare to cache webpages and hide your IP (optional)
@@ -61,19 +61,25 @@ services:
             - PUID=1000
             - PGID=1000
             - TZ=Asia/Ho_Chi_Minh
-            - CRON_MIN=*/1
-        # ports:
-        #     - 8002:80
         volumes:
             - ./persistent/freshrss:/config
         restart: unless-stopped
         image: lscr.io/linuxserver/freshrss:latest
-        # labels:
-        #     - "traefik.enable=true"
-        #     - "traefik.http.routers.freshrss.rule=Host(`freshrss.kenluu.org`)"
-        #     - "traefik.http.routers.freshrss.entrypoints=websecure"
-        #     - "traefik.http.routers.freshrss.tls.certresolver=letsencrypt"
-        #     - "traefik.http.services.freshrss.loadbalancer.server.port=80"
+        networks:
+            - frontend
+    freshrss-linkding:
+        # dedicated container just for linkding stream
+        # for read it later only
+        container_name: freshrss-linkding
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Asia/Ho_Chi_Minh
+            - CRON_MIN=*/1
+        volumes:
+            - ./persistent/freshrss-linkding:/config
+        restart: unless-stopped
+        image: lscr.io/linuxserver/freshrss:latest
         networks:
             - frontend
     linkding:
@@ -105,7 +111,27 @@ services:
             - frontend
         restart: unless-stopped
         command:
-            rss freshrss linkding
+            rss freshrss linkding freshrss-linkding
+    freshrss-cron:
+        build: 
+            context: ./docker/crontab 
+            args:
+                MINUTE: "0"
+                HOUR: "5"
+                DAY_OF_MONTH: "*"
+                MONTH: "*"
+                DAY_OF_WEEK: "*"
+                COMMAND: "/update_freshrss.sh"
+        container_name: freshrss-cron
+        restart: unless-stopped
+        environment:
+            - TZ=Asia/Ho_Chi_Minh
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ./persistent/update_freshrss.sh:/update_freshrss.sh
+        networks:
+            - frontend
+
 # creating specific network to isolate stack from default docker network.
 networks:
   frontend:

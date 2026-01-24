@@ -162,7 +162,7 @@ $options->cache_dir = dirname(__FILE__).'/cache';
 // Substitution tags:
 // {url} - Feed item URL
 // {effective-url} - Feed item URL after we've followed all redirects
-$options->message_to_prepend = '';
+$options->message_to_prepend = '<br>Source: {effective-url}<br>';
 
 // Message to append (without access key)
 // ----------------------
